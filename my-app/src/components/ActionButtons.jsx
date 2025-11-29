@@ -1,28 +1,45 @@
-import React from "react";
 import { Button, message } from "antd";
 
-const ActionButtons = ({onRefresh, loadingAction, setLoadingAction}) => {
+const ActionButtons = ({
+  type,
+  onRefresh,
+  loadingAction,
+  setLoadingAction,
+}) => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  // Reusable API handler
-  const handleApiRequest = async (url, actionName, method) => {
+
+  // Build endpoint: ensure no double slashes
+  const buildUrl = (path) => `${apiUrl.replace(/\/+$/, "")}/api${path}?type=${type}`;
+  
+
+  const handleApiRequest = async (url, actionName, method = "POST") => {
     try {
       setLoadingAction(actionName);
-      message.loading({ content: `${actionName} in progress...`, key: actionName });
+      message.loading({
+        content: `${actionName} in progress...`,
+        key: actionName,
+      });
 
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
       });
 
-      if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
-      const data = await response.json();
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        throw new Error(
+          `Request failed with status ${response.status} ${errText}`
+        );
+      }
+
+      const data = await response.json().catch(() => ({}));
+      console.log("🚀 ~ handleApiRequest ~ data:", data)
 
       message.success({
         content: data.message || `${actionName} completed successfully!`,
         key: actionName,
       });
 
-      // ✅ trigger table refresh after success
       onRefresh();
     } catch (error) {
       console.error(`Error during ${actionName}:`, error);
@@ -31,7 +48,7 @@ const ActionButtons = ({onRefresh, loadingAction, setLoadingAction}) => {
         key: actionName,
       });
     } finally {
-      setLoadingAction(""); // remove button loading
+      setLoadingAction("");
     }
   };
 
@@ -42,7 +59,7 @@ const ActionButtons = ({onRefresh, loadingAction, setLoadingAction}) => {
         loading={loadingAction === "Upload data from CSV"}
         onClick={() =>
           handleApiRequest(
-            `${apiUrl}/api/add-assignment-data`,
+            buildUrl("/add-data"),
             "Upload data from CSV",
             "POST"
           )
@@ -51,58 +68,68 @@ const ActionButtons = ({onRefresh, loadingAction, setLoadingAction}) => {
         Upload data from CSV
       </Button>
 
-      <Button
-        loading={loadingAction === "Clone Assessment Template"}
-        onClick={() =>
-          handleApiRequest(
-            `${apiUrl}/api/clone-assessment-template`,
-            "Clone Assessment Template",
-            "POST"
-          )
-        }
-      >
-        Clone Assessment Template
-      </Button>
+      {/* These buttons are contextual — for assignments we expose clone/create/update-notes */}
+      {type === "assignments" && (
+        <>
+          <Button
+            loading={loadingAction === "Clone Assessment Template"}
+            onClick={() =>
+              handleApiRequest(
+                buildUrl("/clone-assessment-template"),
+                "Clone Assessment Template",
+                "POST"
+              )
+            }
+          >
+            Clone Assessment Template
+          </Button>
 
-      <Button
-        loading={loadingAction === "Create Assignment"}
-        onClick={() =>
-          handleApiRequest(
-            `${apiUrl}/api/create-assignments`,
-            "Create Assignment",
-            "POST"
-          )
-        }
-      >
-        Create Assignment
-      </Button>
+          <Button
+            loading={loadingAction === "Create Assignment"}
+            onClick={() =>
+              handleApiRequest(
+                buildUrl("/create-assignments"),
+                "Create Assignment",
+                "POST"
+              )
+            }
+          >
+            Create Assignment
+          </Button>
 
-      <Button
-        loading={loadingAction === "Create Lecture"}
-        onClick={() =>
-          handleApiRequest(
-            `${apiUrl}/api/create-lectures`,
-            "Create Lecture",
-            "POST"
-          )
-        }
-      >
-        Create Lecture
-      </Button>
+          <Button
+            type="dashed"
+            loading={loadingAction === "Update Notes"}
+            onClick={() =>
+              handleApiRequest(
+                buildUrl("/start-update-notes"),
+                "Update Notes",
+                "POST"
+              )
+            }
+          >
+            Update Notes
+          </Button>
+        </>
+      )}
 
-      <Button
-        type="dashed"
-        loading={loadingAction === "Update Notes"}
-        onClick={() =>
-          handleApiRequest(
-            `${apiUrl}/api/start-update-notes`,
-            "Update Notes",
-            "POST"
-          )
-        }
-      >
-        Update Notes
-      </Button>
+      {/* For lectures */}
+      {type === "lectures" && (
+        <>
+          <Button
+            loading={loadingAction === "Create Lecture"}
+            onClick={() =>
+              handleApiRequest(
+                buildUrl("/create-lectures"),
+                "Create Lecture",
+                "POST"
+              )
+            }
+          >
+            Create Lecture
+          </Button>
+        </>
+      )}
 
       <Button
         type="primary"
@@ -110,7 +137,7 @@ const ActionButtons = ({onRefresh, loadingAction, setLoadingAction}) => {
         loading={loadingAction === "Clear data from CSV"}
         onClick={() =>
           handleApiRequest(
-            `${apiUrl}/api/cleardata`,
+            buildUrl("/cleardata"),
             "Clear data from CSV",
             "DELETE"
           )

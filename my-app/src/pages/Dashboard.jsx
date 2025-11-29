@@ -1,22 +1,44 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ActionButtons from "../components/ActionButtons";
 import DataTable from "../components/DataTable";
 
 const Dashboard = () => {
-  const [refreshKey, setRefreshKey] = useState(0); // used to re-render table
-  const [loadingAction, setLoadingAction] = useState(""); // tracks which button is loading
+  const [params] = useSearchParams();
+  const type = params.get("type"); 
+  const navigate = useNavigate();
 
-  // function to refresh table
-  const refreshTable = () => setRefreshKey((prev) => prev + 1);
+  useEffect(() => {
+    if (type !== "assignments" && type !== "lectures") {
+      console.log("Invalid type. Redirecting...");
+      navigate("/");
+    }
+  }, [type, navigate]);
+
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [loadingAction, setLoadingAction] = useState("");
+
+  const refreshTable = () => setRefreshKey((p) => p + 1);
 
   return (
     <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">
+          {type === "assignments" ? "Assignments" : "Lectures"} Automation
+        </h1>
+        <div className="text-sm text-gray-500">
+          Type: <span className="font-medium">{type}</span>
+        </div>
+      </div>
+
       <ActionButtons
+        type={type}
         onRefresh={refreshTable}
         loadingAction={loadingAction}
         setLoadingAction={setLoadingAction}
       />
-      <DataTable key={refreshKey} />
+
+      <DataTable key={refreshKey} type={type} refreshKey={refreshKey} />
     </div>
   );
 };

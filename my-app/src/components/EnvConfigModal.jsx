@@ -10,19 +10,19 @@ export default function EnvConfigModal({ open, onClose }) {
     MASAI_ASSESS_PLATFORM_USER_PASSWORD: "",
     GOOGLE_SHEET_ID: "",
   });
+
   const requiredKeys = [
-  "MASAI_ADMIN_LMS_USER_EMAIL",
-  "MASAI_ADMIN_LMS_USER_PASSWORD",
-  "MASAI_ASSESS_PLATFORM_USER_EMAIL",
-  "MASAI_ASSESS_PLATFORM_USER_PASSWORD",
-  "GOOGLE_SHEET_ID",
-];
+    "MASAI_ADMIN_LMS_USER_EMAIL",
+    "MASAI_ADMIN_LMS_USER_PASSWORD",
+    "MASAI_ASSESS_PLATFORM_USER_EMAIL",
+    "MASAI_ASSESS_PLATFORM_USER_PASSWORD",
+    "GOOGLE_SHEET_ID",
+  ];
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch existing values
   useEffect(() => {
     if (!open) return;
 
@@ -31,15 +31,11 @@ export default function EnvConfigModal({ open, onClose }) {
         setFetching(true);
         const res = await fetch(`${apiUrl}/env/read`);
         const data = await res.json();
-        // 🔹 Filter only required keys
         const filteredData = {};
-        requiredKeys.forEach((key) => {
-          filteredData[key] = data[key] || "";
-        });
-
+        requiredKeys.forEach((key) => (filteredData[key] = data[key] || ""));
         setForm(filteredData);
       } catch (e) {
-        console.log("Failed to load env");
+        console.log("Failed to load env", e);
       } finally {
         setFetching(false);
       }
@@ -48,9 +44,8 @@ export default function EnvConfigModal({ open, onClose }) {
     fetchEnv();
   }, [open]);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async () => {
     const emptyField = Object.values(form).some((v) => v.trim() === "");
@@ -65,7 +60,6 @@ export default function EnvConfigModal({ open, onClose }) {
       });
 
       const data = await res.json();
-
       if (!res.ok) return setError("❌ Failed: " + data.message);
 
       alert("✅ Saved successfully!");
